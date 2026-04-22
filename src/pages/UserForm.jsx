@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { userService } from '../services/api';
 import { validateUser } from '../utils/validate';
 import toast from 'react-hot-toast';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Mail, Phone, ShieldCheck, ArrowLeft,
@@ -18,6 +19,7 @@ const UserForm = () => {
         firstName: '', lastName: '', email: '', phone: '', role: 'user'
     });
     const [errors, setErrors] = useState({});
+    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
