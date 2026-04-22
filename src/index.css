@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* If you want to keep your dark background from the screenshot */
+body {
+  @apply bg-[#16171d] text-white;
+}
+
