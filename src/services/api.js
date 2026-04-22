@@ -6,10 +6,11 @@ const api = axios.create({
 });
 
 export const userService = {
-  getAll: () => api.get('?limit=10'),
+  getAll: (limit = 10, skip = 0) => api.get(`?limit=${limit}&skip=${skip}`),
+  // ADD THIS LINE:
+  search: (query, limit = 10, skip = 0) => api.get(`/search?q=${query}&limit=${limit}&skip=${skip}`),
   getById: (id) => api.get(`/${id}`),
   create: (userData) => api.post('/add', userData),
-  // DummyJSON uses PUT for full updates
   update: (id, userData) => api.put(`/${id}`, userData),
   delete: (id) => api.delete(`/${id}`),
 };

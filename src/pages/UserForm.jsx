@@ -24,16 +24,27 @@ const UserForm = () => {
     const fetchUserDetails = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await userService.getById(id);
+            // 1. Check Local Storage first for edited data
+            const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
+            const localUser = localUpdates.find(u => String(u.id) === String(id));
 
-            // SANITIZATION LOGIC: 
-            // This removes all non-numeric characters (like +, -, and spaces)
-            // and keeps only the last 10 digits to satisfy your validation.
+            if (localUser) {
+                // Use local data if we've edited this user before
+                setFormData({
+                    ...localUser,
+                    phone: localUser.phone.replace(/\D/g, '').slice(-10)
+                });
+                setLoading(false);
+                return; // Exit early, no need to call API
+            }
+
+            // 2. If no local data, fetch from API
+            const { data } = await userService.getById(id);
             const cleanPhone = data.phone.replace(/\D/g, '').slice(-10);
 
             setFormData({
                 ...data,
-                phone: cleanPhone // Set the sanitized number into the form
+                phone: cleanPhone
             });
         } catch (err) {
             console.error(err);
@@ -72,14 +83,17 @@ const UserForm = () => {
                 response = await userService.create(formData);
             }
 
-            // --- PERSISTENCE LOGIC ---
+            // --- IMPROVED PERSISTENCE LOGIC ---
             const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
 
-            // Remove existing entry to avoid duplicates (using String for ID safety)
-            const filteredUpdates = localUpdates.filter(u => String(u.id) !== String(id));
-
-            // Add the fresh data from the API response
+            // Get the ID from the response (API returns the new ID or updated ID)
             const savedData = response.data;
+            const savedId = String(savedData.id);
+
+            // Filter out any existing version of THIS specific user
+            const filteredUpdates = localUpdates.filter(u => String(u.id) !== savedId);
+
+            // Add the fresh data
             localStorage.setItem('local_users', JSON.stringify([...filteredUpdates, savedData]));
 
             toast.success(isEditMode ? "User Updated!" : "User Created!");
@@ -91,12 +105,6 @@ const UserForm = () => {
             setSaving(false);
         }
     };
-    if (loading) return (
-        <div className="flex justify-center items-center h-64">
-            <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-        </div>
-    );
-
     // Common styles for all text inputs to ensure consistency
     const inputStyles = (fieldName) => `
     w-full border-2 p-3 rounded-xl transition-all outline-none focus:ring-4 
