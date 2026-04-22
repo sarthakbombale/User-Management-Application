@@ -83,7 +83,7 @@ const UserList = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">User Management</h1>
-          <p className="text-gray-500 mt-1">Global search enabled (Case-Insensitive).</p>
+          <p className="text-gray-500 mt-1">Global search enabled.</p>
         </div>
         <Link to="/users/add" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200">
           <UserPlus size={18} /> Add New User
