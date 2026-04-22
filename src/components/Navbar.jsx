@@ -1,15 +1,38 @@
 import { Link } from 'react-router-dom';
+import logo from '../assets/prominno-logo.png';
 
 const Navbar = () => {
   return (
-    <nav className="bg-blue-700 text-white shadow-md p-4 mb-6">
+    <nav className="bg-white text-gray-800 border-b border-gray-100 shadow-sm p-3 mb-6">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/users" className="text-xl font-bold tracking-tight">
-          PROMINNO <span className="font-light text-blue-200">User Portal</span>
+        
+        {/* Logo Section */}
+        <Link to="/users" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <img 
+            src={logo} 
+            alt="Prominno Logo" 
+            className="h-8 w-auto object-contain" 
+          />
+          <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+          <span className="text-sm font-bold tracking-widest text-gray-400 uppercase hidden sm:block">
+            User Portal
+          </span>
         </Link>
-        <div className="space-x-4">
-          <Link to="/users" className="hover:text-blue-200 transition">All Users</Link>
-          <Link to="/users/add" className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 transition">+ Add New</Link>
+
+        {/* Navigation Links */}
+        <div className="flex items-center gap-6">
+          <Link 
+            to="/users" 
+            className="text-sm font-semibold text-gray-600 hover:text-blue-600 transition"
+          >
+            All Users
+          </Link>
+          <Link 
+            to="/users/add" 
+            className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-100"
+          >
+            + ADD NEW
+          </Link>
         </div>
       </div>
     </nav>
