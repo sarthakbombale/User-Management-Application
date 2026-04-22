@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import UserList from './pages/UserList';
 import UserForm from './pages/UserForm';
+import NotFound from './pages/NotFound';
 import Footer from './components/Footer';
 import UserDetail from './pages/UserDetails';
 import "./index.css";
@@ -20,6 +21,7 @@ function App() {
             <Route path="/users/add" element={<UserForm />} />
             <Route path="/users/edit/:id" element={<UserForm />} />
             <Route path="/users/:id" element={<UserDetail />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />
