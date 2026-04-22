@@ -1,7 +1,3 @@
-Since this is a technical assessment for Prominno, your README should be professional, clear, and highlight the specific requirements you met (like the DummyJSON integration and form validation).
-
-Here is a complete, high-quality README.md file you can use for your project.
-
 User Management System (React CRUD)
 A modern, responsive User Management Application built with React, Tailwind CSS, and Framer Motion. This project performs CRUD (Create, Read, Update, Delete) operations using the DummyJSON API and features local persistence to simulate a fullstack experience.
 
