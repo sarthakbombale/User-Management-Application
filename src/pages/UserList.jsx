@@ -32,29 +32,29 @@ const UserList = () => {
       } else {
         response = await userService.getAll(limit, skip);
       }
-      
+
       const { data } = response;
-      
+
       // 2. Get Local Storage Users (Created/Updated locally)
       const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
-      
+
       // 3. Merge Strategy: Start with API users, then add local ones that aren't in API yet
       let mergedUsers = [...data.users];
-      
+
       localUsers.forEach(local => {
         const index = mergedUsers.findIndex(u => String(u.id) === String(local.id));
         if (index !== -1) {
           mergedUsers[index] = local; // Update existing API user with local changes
-        } else if (!searchTerm.trim() || 
-            local.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            local.lastName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        } else if (!searchTerm.trim() ||
+          local.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          local.lastName?.toLowerCase().includes(searchTerm.toLowerCase())) {
           mergedUsers.unshift(local); // Add brand new local user to the list
         }
       });
 
       // 4. Final Filtering for Search & Role on the merged set
       let finalUsers = mergedUsers;
-      
+
       if (roleFilter) {
         finalUsers = finalUsers.filter(u => u.role?.toLowerCase() === roleFilter.toLowerCase());
       }
@@ -76,15 +76,33 @@ const UserList = () => {
   }, [fetchUsers]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
     try {
-      await userService.delete(id);
+      // 1. Attempt to delete from API
+      // If the ID is a large number (Date.now()), the API will likely fail.
+      // We wrap it in a try-catch so the local delete still happens.
+      try {
+        await userService.delete(id);
+      } catch (apiErr) {
+        console.log("Mock API delete skipped or failed for local user.");
+      }
+
+      // 2. Remove from Local UI state immediately
       setUsers(prev => prev.filter(u => String(u.id) !== String(id)));
+
+      // 3. Remove from LocalStorage persistence
       const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
-      localStorage.setItem('local_users', JSON.stringify(localUpdates.filter(u => String(u.id) !== String(id))));
-      toast.success("Deleted successfully");
+      const filteredLocal = localUpdates.filter(u => String(u.id) !== String(id));
+      localStorage.setItem('local_users', JSON.stringify(filteredLocal));
+
+      // 4. Update the total count
+      setTotalUsers(prev => prev - 1);
+
+      toast.success("User deleted successfully");
     } catch (err) {
-      toast.error("Delete failed");
+      console.error(err);
+      toast.error("Failed to complete delete operation");
     }
   };
 
@@ -117,7 +135,7 @@ const UserList = () => {
         </div>
         <div className="relative">
           <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <select 
+          <select
             className="w-full border-2 border-gray-100 p-3 pl-10 rounded-xl bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none text-gray-900 appearance-none cursor-pointer shadow-sm"
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
@@ -144,13 +162,12 @@ const UserList = () => {
                       <p className="text-[10px] text-gray-400 font-mono">#{user.id}</p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
-                    user.role?.toLowerCase() === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${user.role?.toLowerCase() === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
                     {user.role}
                   </span>
                 </div>
-                
+
                 <div className="space-y-2 mb-5">
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <Mail size={14} className="text-gray-400" /> {user.email}
@@ -222,14 +239,14 @@ const UserList = () => {
 
       <div className="mt-8 flex items-center justify-center gap-4">
         <div className="flex items-center gap-1">
-          <button 
+          <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(1)}
             className="p-2 border rounded-xl bg-white text-black hover:bg-gray-50 disabled:opacity-20 shadow-sm transition"
           >
             <ChevronsLeft size={20} />
           </button>
-          <button 
+          <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => prev - 1)}
             className="p-2 border rounded-xl bg-white text-black hover:bg-gray-50 disabled:opacity-20 shadow-sm transition"
@@ -243,14 +260,14 @@ const UserList = () => {
         </span>
 
         <div className="flex items-center gap-1">
-          <button 
+          <button
             disabled={currentPage === totalPages || totalPages === 0}
             onClick={() => setCurrentPage(prev => prev + 1)}
             className="p-2 border rounded-xl bg-white text-black hover:bg-gray-50 disabled:opacity-20 shadow-sm transition"
           >
             <ChevronRight size={20} />
           </button>
-          <button 
+          <button
             disabled={currentPage === totalPages || totalPages === 0}
             onClick={() => setCurrentPage(totalPages)}
             className="p-2 border rounded-xl bg-white text-black hover:bg-gray-50 disabled:opacity-20 shadow-sm transition"
