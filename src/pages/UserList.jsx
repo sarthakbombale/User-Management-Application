@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { userService } from '../services/api';
-import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Loader from '../components/Loader';
 import { UserPlus, Search, Filter, Eye, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Phone, Mail } from 'lucide-react';
 
 const UserList = () => {
-  const navigate = useNavigate(); // For programmatic navigation in cards
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,6 +21,7 @@ const UserList = () => {
       const skip = (currentPage - 1) * limit;
       let response;
 
+      // 1. Fetch data from API
       if (searchTerm.trim()) {
         response = await userService.search(searchTerm.trim(), limit, skip);
         if (response.data.total === 0) {
@@ -33,20 +34,33 @@ const UserList = () => {
       }
       
       const { data } = response;
-      setTotalUsers(data.total);
-
-      const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
       
-      let mergedUsers = data.users.map(apiUser => {
-        const localMatch = localUpdates.find(u => String(u.id) === String(apiUser.id));
-        return localMatch ? localMatch : apiUser;
+      // 2. Get Local Storage Users (Created/Updated locally)
+      const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
+      
+      // 3. Merge Strategy: Start with API users, then add local ones that aren't in API yet
+      let mergedUsers = [...data.users];
+      
+      localUsers.forEach(local => {
+        const index = mergedUsers.findIndex(u => String(u.id) === String(local.id));
+        if (index !== -1) {
+          mergedUsers[index] = local; // Update existing API user with local changes
+        } else if (!searchTerm.trim() || 
+            local.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            local.lastName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+          mergedUsers.unshift(local); // Add brand new local user to the list
+        }
       });
 
+      // 4. Final Filtering for Search & Role on the merged set
+      let finalUsers = mergedUsers;
+      
       if (roleFilter) {
-        mergedUsers = mergedUsers.filter(u => u.role?.toLowerCase() === roleFilter.toLowerCase());
+        finalUsers = finalUsers.filter(u => u.role?.toLowerCase() === roleFilter.toLowerCase());
       }
 
-      setUsers(mergedUsers);
+      setTotalUsers(searchTerm.trim() ? finalUsers.length : (data.total + localUsers.filter(l => !data.users.find(a => a.id === l.id)).length));
+      setUsers(finalUsers.slice(0, limit)); // Maintain local pagination view
     } catch (err) {
       toast.error("Failed to load users");
     } finally {
@@ -79,9 +93,11 @@ const UserList = () => {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-gray-50">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">User Management</h1>
-          <p className="text-gray-500 mt-1">Global search enabled.</p>
+          <span className="bg-blue-100 text-blue-700 text-sm font-black px-3 py-1 rounded-full border border-blue-200">
+            {totalUsers}
+          </span>
         </div>
         <Link to="/users/add" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200">
           <UserPlus size={18} /> Add New User
@@ -115,14 +131,13 @@ const UserList = () => {
 
       {loading ? <Loader /> : (
         <>
-          {/* --- MOBILE/TABLET VIEW (Cards) --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
             {users.length > 0 ? users.map((user) => (
               <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 text-blue-600 p-3 rounded-xl font-bold text-sm">
-                      {user.firstName[0]}{user.lastName[0]}
+                      {user.firstName?.[0]}{user.lastName?.[0]}
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900">{user.firstName} {user.lastName}</h3>
@@ -162,7 +177,6 @@ const UserList = () => {
             )}
           </div>
 
-          {/* --- DESKTOP VIEW (Table) --- */}
           <div className="hidden lg:block bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -206,7 +220,6 @@ const UserList = () => {
         </>
       )}
 
-      {/* Arrow-style Pagination */}
       <div className="mt-8 flex items-center justify-center gap-4">
         <div className="flex items-center gap-1">
           <button 

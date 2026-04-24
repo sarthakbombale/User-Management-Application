@@ -85,24 +85,35 @@ const UserForm = () => {
                 response = await userService.create(formData);
             }
 
-            // --- IMPROVED PERSISTENCE LOGIC ---
+            // --- PERSISTENCE FIX ---
             const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
 
-            // Get the ID from the response (API returns the new ID or updated ID)
-            const savedData = response.data;
+            // API returns the newly created user object. 
+            // We merge our formData with the API response to ensure we have all fields.
+            const savedData = { ...formData, ...response.data };
             const savedId = String(savedData.id);
 
-            // Filter out any existing version of THIS specific user
+            // Remove old local version if it exists
             const filteredUpdates = localUpdates.filter(u => String(u.id) !== savedId);
 
-            // Add the fresh data
-            localStorage.setItem('local_users', JSON.stringify([...filteredUpdates, savedData]));
+            // Save the full object to localStorage
+            localStorage.setItem('local_users', JSON.stringify([savedData, ...filteredUpdates]));
 
             toast.success(isEditMode ? "User Updated!" : "User Created!");
             navigate('/users');
         } catch (err) {
-            console.error(err);
-            toast.error("API request failed");
+            console.error("API Error:", err);
+
+            // FALLBACK: If API 404s on Create/Update, save to LocalStorage anyway for the demo
+            const fallbackId = isEditMode ? id : Date.now();
+            const fallbackData = { ...formData, id: fallbackId };
+            const localUpdates = JSON.parse(localStorage.getItem('local_users') || '[]');
+            const filtered = localUpdates.filter(u => String(u.id) !== String(fallbackId));
+
+            localStorage.setItem('local_users', JSON.stringify([fallbackData, ...filtered]));
+
+            toast.success(isEditMode ? "Updated (Local Only)" : "Created (Local Only)");
+            navigate('/users');
         } finally {
             setSaving(false);
         }
@@ -232,8 +243,8 @@ const UserForm = () => {
                             value={formData.role}
                             onChange={handleChange}
                         >
-                            <option value="user" className="text-gray-900">Standard User</option>
-                            <option value="admin" className="text-gray-900">Administrator</option>
+                            <option value="user" className="text-gray-900">User</option>
+                            <option value="admin" className="text-gray-900">Admin</option>
                         </select>
                         {/* Custom arrow icon since appearance-none hides the default */}
                         <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
